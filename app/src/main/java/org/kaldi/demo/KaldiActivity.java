@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 
+import org.json.*;
+
 public class KaldiActivity extends Activity implements
         RecognitionListener {
 
@@ -57,6 +59,8 @@ public class KaldiActivity extends Activity implements
     private Model model;
     private SpeechService speechService;
     TextView resultView;
+
+    private String textAccumulator = "";
 
     @Override
     public void onCreate(Bundle state) {
@@ -108,7 +112,8 @@ public class KaldiActivity extends Activity implements
 
                 Vosk.SetLogLevel(0);
 
-                activityReference.get().model = new Model(assetDir.toString() + "/model-android");
+                //activityReference.get().model = new Model(assetDir.toString() + "/model-android");
+                activityReference.get().model = new Model(assetDir.toString() + "/vosk-model-small-de-0.15");
             } catch (IOException e) {
                 return e;
             }
@@ -198,12 +203,36 @@ public class KaldiActivity extends Activity implements
 
     @Override
     public void onResult(String hypothesis) {
-        resultView.append(hypothesis + "\n");
+        //resultView.append(hypothesis + "\n");
+        System.out.println(hypothesis);
+        try {
+            JSONObject result = new JSONObject(hypothesis);
+            String text = result.getString("text");
+            String finalText = text;
+            switch (text){
+                case "punkt":
+                    finalText = ".";
+                    break;
+            }
+            textAccumulator += " " + finalText;
+            resultView.setText(textAccumulator);
+        } catch (Exception e){
+            System.out.println("ERROR: Json parse exception");
+        }
     }
 
     @Override
     public void onPartialResult(String hypothesis) {
-        resultView.append(hypothesis + "\n");
+        //resultView.append(hypothesis + "\n");
+        System.out.println(hypothesis);
+        try {
+            JSONObject partialResult = new JSONObject(hypothesis);
+            String partialText = partialResult.getString("partial");
+            String tempText = textAccumulator + " " + partialText;
+            resultView.setText(tempText);
+        } catch (Exception e){
+            System.out.println("ERROR: Json parse exception");
+        }
     }
 
     @Override
