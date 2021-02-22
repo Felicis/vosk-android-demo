@@ -46,7 +46,7 @@ import java.lang.ref.WeakReference;
 
 import org.json.*;
 
-public class KaldiActivity extends Activity implements
+public class KaldiInputMethod extends Activity implements
         RecognitionListener {
 
     static private final int STATE_START = 0;
@@ -100,9 +100,9 @@ public class KaldiActivity extends Activity implements
     }
 
     private static class SetupTask extends AsyncTask<Void, Void, Exception> {
-        WeakReference<KaldiActivity> activityReference;
+        WeakReference<KaldiInputMethod> activityReference;
 
-        SetupTask(KaldiActivity activity) {
+        SetupTask(KaldiInputMethod activity) {
             this.activityReference = new WeakReference<>(activity);
         }
 
@@ -134,10 +134,10 @@ public class KaldiActivity extends Activity implements
     }
 
     private static class RecognizeTask extends AsyncTask<Void, Void, String> {
-        WeakReference<KaldiActivity> activityReference;
+        WeakReference<KaldiInputMethod> activityReference;
         WeakReference<TextView> resultView;
 
-        RecognizeTask(KaldiActivity activity, TextView resultView) {
+        RecognizeTask(KaldiInputMethod activity, TextView resultView) {
             this.activityReference = new WeakReference<>(activity);
             this.resultView = new WeakReference<>(resultView);
         }
