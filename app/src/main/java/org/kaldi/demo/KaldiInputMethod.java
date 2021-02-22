@@ -15,23 +15,17 @@
 package org.kaldi.demo;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
-import android.view.inputmethod.InputConnection;
 import android.inputmethodservice.InputMethodService;
-
+import android.os.AsyncTask;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.json.JSONObject;
 import org.kaldi.Assets;
 import org.kaldi.KaldiRecognizer;
 import org.kaldi.Model;
@@ -44,9 +38,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 
-import org.json.*;
+import androidx.core.content.ContextCompat;
 
-public class KaldiInputMethod extends Activity implements
+public class KaldiInputMethod extends InputMethodService implements
         RecognitionListener {
 
     static private final int STATE_START = 0;
@@ -55,9 +49,6 @@ public class KaldiInputMethod extends Activity implements
     static private final int STATE_FILE = 3;
     static private final int STATE_MIC = 4;
 
-    /* Used to handle permission request */
-    private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
-
 
     private Model model;
     private SpeechService speechService;
@@ -65,38 +56,63 @@ public class KaldiInputMethod extends Activity implements
 
     private String textAccumulator = "";
 
+    private View overlayView;
+
     @Override
-    public void onCreate(Bundle state) {
-        super.onCreate(state);
-        setContentView(R.layout.main);
+    public void onInitializeInterface() {
+        // called before UI elements created
+        // a) after service first created
+        // b) after config change happens
+
+        // Check if user has given permission to record audio
+        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            // TODO: error => has to open settings first
+            return;
+        }
+        // Recognizer initialization is a time-consuming and it involves IO,
+        // so we execute it in async task
+        new SetupTask(this).execute();
+    }
+
+    @Override
+    public void onBindInput() {
+        // when user first clicks e.g. in text field
+    }
+
+    @Override
+    public void onStartInputView(EditorInfo info, boolean restarting) {
+        // text input has started
+    }
+
+    @Override
+    public void onFinishInputView(boolean finishingInput) {
+        // text input has ended
+    }
+
+    @Override
+    public View onCreateInputView() {
+        // create view
+        overlayView = (View) getLayoutInflater().inflate(R.layout.main, null);
 
         // Setup layout
-        resultView = findViewById(R.id.result_text);
+        resultView = overlayView.findViewById(R.id.result_text);
         setUiState(STATE_START);
 
-        findViewById(R.id.recognize_file).setOnClickListener(new View.OnClickListener() {
+        overlayView.findViewById(R.id.recognize_file).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 recognizeFile();
             }
         });
 
-        findViewById(R.id.recognize_mic).setOnClickListener(new View.OnClickListener() {
+        overlayView.findViewById(R.id.recognize_mic).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 recognizeMicrophone();
             }
         });
-
-        // Check if user has given permission to record audio
-        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
-            return;
-        }
-        // Recognizer initialization is a time-consuming and it involves IO,
-        // so we execute it in async task
-        new SetupTask(this).execute();
+        return overlayView;
     }
 
     private static class SetupTask extends AsyncTask<Void, Void, Exception> {
@@ -171,27 +187,12 @@ public class KaldiInputMethod extends Activity implements
         }
 
         @Override
-        protected void onPostExecute(String result){
+        protected void onPostExecute(String result) {
             activityReference.get().setUiState(STATE_READY);
             resultView.get().append(result + "\n");
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == PERMISSIONS_REQUEST_RECORD_AUDIO) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Recognizer initialization is a time-consuming and it involves IO,
-                // so we execute it in async task
-                new SetupTask(this).execute();
-            } else {
-                finish();
-            }
-        }
-    }
 
     @Override
     public void onDestroy() {
@@ -211,13 +212,13 @@ public class KaldiInputMethod extends Activity implements
         try {
             JSONObject result = new JSONObject(hypothesis);
             String text = result.getString("text");
-            String finalText = text;
+            String finalText = " " + text;
             switch (text) {
                 case "punkt":
                     finalText = ".";
                     break;
             }
-            textAccumulator += " " + finalText;
+            textAccumulator += finalText;
             resultView.setText(textAccumulator);
         } catch (Exception e) {
             System.out.println("ERROR: Json parse exception");
@@ -260,39 +261,39 @@ public class KaldiInputMethod extends Activity implements
             case STATE_START:
                 resultView.setText(R.string.preparing);
                 resultView.setMovementMethod(new ScrollingMovementMethod());
-                findViewById(R.id.recognize_file).setEnabled(false);
-                findViewById(R.id.recognize_mic).setEnabled(false);
+                overlayView.findViewById(R.id.recognize_file).setEnabled(false);
+                overlayView.findViewById(R.id.recognize_mic).setEnabled(false);
                 break;
             case STATE_READY:
                 resultView.setText(R.string.ready);
-                ((Button) findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
-                findViewById(R.id.recognize_file).setEnabled(true);
-                findViewById(R.id.recognize_mic).setEnabled(true);
+                ((Button) overlayView.findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
+                overlayView.findViewById(R.id.recognize_file).setEnabled(true);
+                overlayView.findViewById(R.id.recognize_mic).setEnabled(true);
                 break;
             case STATE_DONE:
-                ((Button) findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
-                findViewById(R.id.recognize_file).setEnabled(true);
-                findViewById(R.id.recognize_mic).setEnabled(true);
+                ((Button) overlayView.findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
+                overlayView.findViewById(R.id.recognize_file).setEnabled(true);
+                overlayView.findViewById(R.id.recognize_mic).setEnabled(true);
                 break;
             case STATE_FILE:
                 resultView.setText(getString(R.string.starting));
-                findViewById(R.id.recognize_mic).setEnabled(false);
-                findViewById(R.id.recognize_file).setEnabled(false);
+                overlayView.findViewById(R.id.recognize_mic).setEnabled(false);
+                overlayView.findViewById(R.id.recognize_file).setEnabled(false);
                 break;
             case STATE_MIC:
-                ((Button) findViewById(R.id.recognize_mic)).setText(R.string.stop_microphone);
+                ((Button) overlayView.findViewById(R.id.recognize_mic)).setText(R.string.stop_microphone);
                 resultView.setText(getString(R.string.say_something));
-                findViewById(R.id.recognize_file).setEnabled(false);
-                findViewById(R.id.recognize_mic).setEnabled(true);
+                overlayView.findViewById(R.id.recognize_file).setEnabled(false);
+                overlayView.findViewById(R.id.recognize_mic).setEnabled(true);
                 break;
         }
     }
 
     private void setErrorState(String message) {
         resultView.setText(message);
-        ((Button) findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
-        findViewById(R.id.recognize_file).setEnabled(false);
-        findViewById(R.id.recognize_mic).setEnabled(false);
+        ((Button) overlayView.findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
+        overlayView.findViewById(R.id.recognize_file).setEnabled(false);
+        overlayView.findViewById(R.id.recognize_mic).setEnabled(false);
     }
 
     public void recognizeFile() {
