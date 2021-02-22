@@ -23,6 +23,9 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import android.view.inputmethod.InputConnection;
+import android.inputmethodservice.InputMethodService;
+
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
@@ -219,6 +222,11 @@ public class KaldiActivity extends Activity implements
         } catch (Exception e){
             System.out.println("ERROR: Json parse exception");
         }
+        //InputConnection ic = getCurrentInputConnection();
+        //ic.deleteSurroundingText(4, 0);
+        //ic.commitText("Hello", 1);
+        //ic.commitText("!", 1);
+
     }
 
     @Override
