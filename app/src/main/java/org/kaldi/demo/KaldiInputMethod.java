@@ -37,6 +37,10 @@ import org.kaldi.Vosk;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import androidx.core.content.ContextCompat;
 
@@ -121,53 +125,72 @@ public class KaldiInputMethod extends InputMethodService implements
         overlayView.findViewById(R.id.backspace).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // delete last char (long press?)
+                // delete last char
                 InputConnection ic = getCurrentInputConnection();
-                if (ic != null)
+                if (ic == null) return;
+                CharSequence selectedChars = ic.getSelectedText(0);
+                if (selectedChars == null) {
                     ic.deleteSurroundingText(1, 0);
+                } else if (selectedChars.toString() == "") {
+                    ic.deleteSurroundingText(1, 0);
+                } else {
+                    ic.performContextMenuAction(android.R.id.cut);
+                }
             }
-        });
-        overlayView.findViewById(R.id.colon).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                appendToComposing(":");
-            }
-        });
-        overlayView.findViewById(R.id.exclamation).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                appendToComposing("!");
-            }
-        });
-        overlayView.findViewById(R.id.question).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                appendToComposing("?");
-            }
-        });
-        overlayView.findViewById(R.id.comma).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                appendToComposing(",");
-            }
-        });
-        overlayView.findViewById(R.id.dot).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                appendToComposing(".");
-            }
-        });
-        overlayView.findViewById(R.id.enter).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                appendToComposing("\n");
-            }
-        });
+            });
+        overlayView.findViewById(R.id.colon).
+
+                setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        appendSpecial(":");
+                    }
+                });
+        overlayView.findViewById(R.id.exclamation).
+
+                setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        appendSpecial("!");
+                    }
+                });
+        overlayView.findViewById(R.id.question).
+
+                setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        appendSpecial("?");
+                    }
+                });
+        overlayView.findViewById(R.id.comma).
+
+                setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        appendSpecial(",");
+                    }
+                });
+        overlayView.findViewById(R.id.dot).
+
+                setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        appendSpecial(".");
+                    }
+                });
+        overlayView.findViewById(R.id.enter).
+
+                setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        appendSpecial("\n");
+                    }
+                });
 
         return overlayView;
     }
 
-    private void appendToComposing(String text) {
+    private void appendSpecial(String text) {
         InputConnection ic = getCurrentInputConnection();
         if (ic != null)
             ic.commitText(text, 1);
@@ -270,6 +293,7 @@ public class KaldiInputMethod extends InputMethodService implements
             JSONObject result = new JSONObject(hypothesis);
             String text = result.getString("text");
             String finalText = text;
+            if (finalText == "") return;
             switch (text) {
                 case "punkt":
                     finalText = ".";
@@ -290,9 +314,17 @@ public class KaldiInputMethod extends InputMethodService implements
         System.out.println(hypothesis);
         try {
             JSONObject partialResult = new JSONObject(hypothesis);
-            String partialText = partialResult.getString("partial");
+            String partialText = partialResult.getString("partial").trim();
+            if (partialText == "" || partialText == "nun") return; // wtf nun ?!
 //            resultView.setText(partialText);
             InputConnection ic = getCurrentInputConnection();
+            if (ic == null) return;
+            String lastChar = ic.getTextBeforeCursor(1, 0).toString();
+            if (lastChar != null) { // do not append two words without space
+                if (lastChar != " ") {
+                        partialText = " " + partialText;
+                }
+            }
             ic.setComposingText(partialText, 1);
         } catch (Exception e) {
             System.out.println("ERROR: Json parse exception");
