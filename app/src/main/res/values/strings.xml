@@ -3,13 +3,21 @@
 
     <string name="app_name">Vosk Demo</string>
     <string name="recognize_file">Recognize File</string>
-    <string name="recognize_microphone">Recognize Microphone</string>
-    <string name="stop_microphone">Stop Microphone</string>
+    <string name="recognize_microphone">start</string>
+    <string name="stop_microphone">stop</string>
     <string name="preparing">Preparing the recognizer\n</string>
     <string name="ready">Ready\n</string>
     <string name="failed">Failed to init recognizer %s\n</string>
     <string name="elapsed">Result %s elapsed %d milliseconds\n</string>
     <string name="starting">Starting\n</string>
     <string name="say_something">Say something\n</string>
+    <string name="comma">,</string>
+    <string name="exclamation">!</string>
+    <string name="colon">:</string>
+    <string name="dot">.</string>
+    <string name="enter"><![CDATA[<-\']]></string>
+    <string name="world">O</string>
+    <string name="backspace"><![CDATA[<-]]></string>
+    <string name="question">\?</string>
 
 </resources>

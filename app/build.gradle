@@ -31,4 +31,5 @@ dependencies {
     implementation 'com.alphacep:vosk-android:0.3.+'
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation project(':models')
+    implementation "androidx.constraintlayout:constraintlayout:2.0.4"
 }
