@@ -53,7 +53,7 @@ public class KaldiInputMethod extends Activity implements
     static private final int STATE_READY = 1;
     static private final int STATE_DONE = 2;
     static private final int STATE_FILE = 3;
-    static private final int STATE_MIC  = 4;
+    static private final int STATE_MIC = 4;
 
     /* Used to handle permission request */
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
@@ -171,7 +171,7 @@ public class KaldiInputMethod extends Activity implements
         }
 
         @Override
-        protected void onPostExecute(String result) {
+        protected void onPostExecute(String result){
             activityReference.get().setUiState(STATE_READY);
             resultView.get().append(result + "\n");
         }
@@ -212,14 +212,14 @@ public class KaldiInputMethod extends Activity implements
             JSONObject result = new JSONObject(hypothesis);
             String text = result.getString("text");
             String finalText = text;
-            switch (text){
+            switch (text) {
                 case "punkt":
                     finalText = ".";
                     break;
             }
             textAccumulator += " " + finalText;
             resultView.setText(textAccumulator);
-        } catch (Exception e){
+        } catch (Exception e) {
             System.out.println("ERROR: Json parse exception");
         }
         //InputConnection ic = getCurrentInputConnection();
@@ -238,7 +238,7 @@ public class KaldiInputMethod extends Activity implements
             String partialText = partialResult.getString("partial");
             String tempText = textAccumulator + " " + partialText;
             resultView.setText(tempText);
-        } catch (Exception e){
+        } catch (Exception e) {
             System.out.println("ERROR: Json parse exception");
         }
     }
