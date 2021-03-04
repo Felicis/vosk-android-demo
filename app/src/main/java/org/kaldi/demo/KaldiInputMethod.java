@@ -213,7 +213,7 @@ public class KaldiInputMethod extends InputMethodService implements
                 Vosk.SetLogLevel(0);
 
                 activityReference.get().model = new Model(assetDir.toString() + "/default-en");
-                //activityReference.get().model = new Model(assetDir.toString() + "/vosk-model-small-de-0.15");
+//                activityReference.get().model = new Model(assetDir.toString() + "/vosk-model-small-de-0.15");
             } catch (IOException e) {
                 return e;
             }
